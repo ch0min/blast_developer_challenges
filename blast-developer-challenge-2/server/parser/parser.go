@@ -12,7 +12,7 @@ import (
 func ensurePlayer(match *models.Match, name string) *models.Player {
 	// Check player exist
 	if _, exists := match.Players[name]; !exists {
-		// If player don't exist, create a new player with 0 stats / bot
+		// If player don't exist, create a new player with 0 stats
 		match.Players[name] = &models.Player{
 			Name: name,
 			Kills: 0,
@@ -54,6 +54,7 @@ func ParseMatchLog(filePath string) (*models.Match, error) {
 	timestampRegex := regexp.MustCompile(`(\d{2}/\d{2}/\d{4} - \d{2}:\d{2}:\d{2})`)
 	roundStartRegex := regexp.MustCompile(`World triggered "Round_Start"`)
 	roundEndRegex := regexp.MustCompile(`World triggered "Round_End"`)
+	roundNumberRegex := regexp.MustCompile(`RoundsPlayed: (\d+)`)
 	killEventRegex := regexp.MustCompile(`"([^"]+)<\d+><STEAM_[^>]+><[^>]+>" \[-?\d+ -?\d+ -?\d+\] killed "([^"]+)<\d+><STEAM_[^>]+><[^>]+>"`)
 
 
@@ -70,6 +71,17 @@ func ParseMatchLog(filePath string) (*models.Match, error) {
 				return nil, fmt.Errorf("failed to parse timestamp: %v", err)
 			}
 		
+			// Detect and handle round number
+			if roundNumberMatch := roundNumberRegex.FindStringSubmatch(line); len(roundNumberMatch) > 1 {
+				roundNumber := roundNumberMatch[1]
+				fmt.Println("Detected round number update:", roundNumber)
+
+				// Update Round Number
+				if len(match.Rounds) > 0 {
+					lastRound := &match.Rounds[len(match.Rounds)-1]
+					lastRound.RoundNumber = match.TotalRounds
+				}
+			}
 
 			// Detect and handle round start
 			if roundStartRegex.MatchString(line) {
@@ -115,9 +127,10 @@ func ParseMatchLog(filePath string) (*models.Match, error) {
 				killerPlayer.Kills++
 				victimPlayer.Deaths++
 
-			} else {
+			} /*else {
 				fmt.Println("No kill event matched for line:", line)
-			}
+				fmt.Println(">")
+			}*/
 		}
 	}
 	match.Rounds = skipLastRound(match.Rounds)

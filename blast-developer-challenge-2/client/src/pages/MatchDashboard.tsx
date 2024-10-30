@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchMatchData } from "../api/fetchMatchData";
+import Players from "../components/Players";
+import Rounds from "../components/Rounds";
 
 interface Player {
 	name: string;
@@ -13,7 +15,6 @@ interface Round {
 	endTime: number;
 	duration: number;
 }
-
 interface Match {
 	rounds: Round[];
 	players: { [key: string]: Player };
@@ -29,6 +30,7 @@ function MatchDashboard() {
 		const getMatchData = async () => {
 			try {
 				const data = await fetchMatchData();
+				console.log("Match data received:", data);
 				setMatchData(data);
 				setLoading(false);
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -53,25 +55,10 @@ function MatchDashboard() {
 		<div className="p-4">
 			<h1 className="text-2xl font-bold mb-4">Match Dashboard</h1>
 			<h2 className="text-xl font-semibold">Players</h2>
-			<ul className="mb-4">
-				{matchData &&
-					Object.entries(matchData.players).map(([name, player]) => (
-						<li key={name} className="border-b border-gray-200 py-2">
-							<span className="font-semibold">{name}</span>: {player.kills} Kills, {player.deaths} Deaths
-						</li>
-					))}
-			</ul>
+			{matchData && <Players players={matchData.players} />}
 
-			<h2 className="text-xl font-semibold">Rounds</h2>
-			<ul>
-				{matchData &&
-					matchData.rounds.map((round) => (
-						<li key={round.roundNumber} className="border-b border-gray-200 py-2">
-							<span className="font-semibold">Round {round.roundNumber}</span>: Duration{" "}
-							{round.duration.toFixed(2)} seconds
-						</li>
-					))}
-			</ul>
+			<h2 className="mt-10 text-xl font-semibold">Rounds</h2>
+			{matchData && <Rounds rounds={matchData.rounds} />}
 		</div>
 	);
 }
